@@ -24,6 +24,8 @@ gym[box2d]:	     0.26.2
 
 The runs/ dir will have Tensorboard files for data analysis.
 
+Pixel_observation.py has a wrapper class that is imported to enable multi-input.
+
 The buffers.py file is in case you get errors from the Stable_baselines3 buffers.py file in which case you will need to replace it with the one in this dir.
 
 
