@@ -16,7 +16,7 @@ DQN only uses one deep network.
 To run the agent and environment use 'python multi-imput_dqn.py'.
 
 
-These are th primary lib versions but different versions may work except gym[box2d] needs to be >= 0.26.2.  These can all be installed with conda or pip.
+These are th primary lib versions but different versions may work except gym[box2d] needs to be >= 0.26.  These can all be installed with conda or pip.
 Torch: 	    	     1.12.1+cu102
 Stable_baselines3:   1.7.0
 gym[box2d]:	     0.26.2
