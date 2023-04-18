@@ -109,7 +109,7 @@ class QNetwork(nn.Module): # multi-input q network
             nn.ReLU(),
         )
         self.vector_network = nn.Sequential(
-            nn.Linear(np.array((8,)).prod(), 120),
+            nn.Linear(torch.tensor((8,)).prod().item(), 120),
             #nn.Linear(np.array(env.single_observation_space.shape).prod(), 120),
             nn.ReLU(),
         )
@@ -165,7 +165,6 @@ if __name__ == "__main__":
     # env setup
     envs = gym.vector.SyncVectorEnv([make_env(args.env_id, args.seed, 0, args.capture_video, run_name)])
     assert isinstance(envs.single_action_space, gym.spaces.Discrete), "only discrete action space is supported"
-
     q_network = QNetwork(envs).to(device)
     optimizer = optim.Adam(q_network.parameters(), lr=args.learning_rate)
     target_network = QNetwork(envs).to(device)
@@ -246,25 +245,36 @@ if __name__ == "__main__":
                     target_network_param.data.copy_(
                         args.tau * q_network_param.data + (1.0 - args.tau) * target_network_param.data
                     )
-
+  
     if args.save_model:
-        model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
+        torch.onnx.export(q_network,               # model being run
+                  ( torch.randn((1, 8),device='cuda'), torch.randn((1, 400,600,3), device='cuda')),  # model input (or a tuple for multiple inputs)
+                  f"runs/{run_name}/{args.exp_name}.onnx",   # where to save the model (can be a file or file-like object)
+                  export_params=True,        # store the trained parameter weights inside the model file
+                  opset_version=10,          # the ONNX version to export the model to
+                  do_constant_folding=True,  # whether to execute constant folding for optimization
+                  input_names = ['input'],   # the model's input names
+                  output_names = ['output'], # the model's output names
+                  dynamic_axes={'input' : {0 : 'batch_size'},    # variable length axes
+                                'output' : {0 : 'batch_size'}})
+        
+        model_path = f"runs/{run_name}/{args.exp_name}.model"
         torch.save(q_network.state_dict(), model_path)
         print(f"model saved to {model_path}")
         from cleanrl_utils.evals.dqn_eval import evaluate
 
-        episodic_returns = evaluate(
-            model_path,
-            make_env,
-            args.env_id,
-            eval_episodes=10,
-            run_name=f"{run_name}-eval",
-            Model=QNetwork,
-            device=device,
-            epsilon=0.05,
-        )
-        for idx, episodic_return in enumerate(episodic_returns):
-            writer.add_scalar("eval/episodic_return", episodic_return, idx)
+        # episodic_returns = evaluate(
+        #     model_path,
+        #     make_env,
+        #     args.env_id,
+        #     eval_episodes=10,
+        #     run_name=f"{run_name}-eval",
+        #     Model=QNetwork,
+        #     device=device,
+        #     epsilon=0.05,
+        # )
+        # for idx, episodic_return in enumerate(episodic_returns):
+        #     writer.add_scalar("eval/episodic_return", episodic_return, idx)
 
         if args.upload_model:
             from cleanrl_utils.huggingface import push_to_hub
