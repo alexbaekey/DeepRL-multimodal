@@ -51,7 +51,7 @@ def parse_args():
         help="total timesteps of the experiments")
     parser.add_argument("--learning-rate", type=float, default=2.5e-4,
         help="the learning rate of the optimizer")
-    parser.add_argument("--buffer-size", type=int, default=10000,
+    parser.add_argument("--buffer-size", type=int, default=4500,
         help="the replay memory buffer size")
     parser.add_argument("--gamma", type=float, default=0.99,
         help="the discount factor gamma")
@@ -120,13 +120,12 @@ class QNetwork(nn.Module): # multi-input q network
         )
 
     def forward(self, x_vector, x_image):
-        with torch.autocast(device_type='cuda'):
-            x_image = self.image_network((x_image.permute(0, 3, 1, 2) / 255.0))
-            x_vector = self.vector_network(x_vector)
+        x_image = self.image_network((x_image.permute(0, 3, 1, 2) / 255.0))
+        x_vector = self.vector_network(x_vector)
 
-            x = torch.cat([x_vector, x_image], dim=1)
-            x = self.head(x)
-            return x
+        x = torch.cat([x_vector, x_image], dim=1)
+        x = self.head(x)
+        return x
 
 
 
@@ -249,22 +248,11 @@ if __name__ == "__main__":
                     )
   
     if args.save_model:
-        torch.onnx.export(q_network,               # model being run
-                  ( torch.randn((1, 8),device='cuda'), torch.randn((1, 400,600,3), device='cuda')),  # model input (or a tuple for multiple inputs)
-                  f"runs/{run_name}/{args.exp_name}.onnx",   # where to save the model (can be a file or file-like object)
-                  export_params=True,        # store the trained parameter weights inside the model file
-                  opset_version=10,          # the ONNX version to export the model to
-                  do_constant_folding=True,  # whether to execute constant folding for optimization
-                  input_names = ['input'],   # the model's input names
-                  output_names = ['output'], # the model's output names
-                  dynamic_axes={'input' : {0 : 'batch_size'},    # variable length axes
-                                'output' : {0 : 'batch_size'}})
-        
+
         model_path = f"runs/{run_name}/{args.exp_name}.model"
         torch.save(q_network.state_dict(), model_path)
         print(f"model saved to {model_path}")
-        from cleanrl_utils.evals.dqn_eval import evaluate
-
+        # from cleanrl_utils.evals.dqn_eval import evaluate
         # episodic_returns = evaluate(
         #     model_path,
         #     make_env,

@@ -48,10 +48,9 @@ if __name__ == "__main__":
     print("\n==========================================================\n\n")
 
     print("\n======================Pytorch Optimization====================\n")
-    benchmark(model, input_shape=((1, 8),(1, 400,600,3)) ,nruns=100, dtype="fp16")
-    print("\n==========================================================\n\n")
     torch_optim_model= torch.compile(model, mode="max-autotune")
     benchmark(torch_optim_model, input_shape=((1, 8),(1, 400,600,3)) ,nruns=100, dtype="fp16")
+    print("\n==========================================================\n\n")
 
     print("Starting model compilation (this may take some time grab a coffee)...")
     model.load_state_dict(torch.load(PATH))
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     print("Model Compiled!")
 
     print("\n==========================================================\n")
-    print("\n======================Post Optimization====================\n")
-    print("\n==========================================================\n")
+    print("\n======================TRT Optimization====================\n")
     benchmark(trt_model, input_shape=((1, 8),(1, 400,600,3)) ,nruns=100, dtype="fp16")
+    print("\n==========================================================\n")
 
