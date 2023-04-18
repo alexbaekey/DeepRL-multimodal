@@ -120,13 +120,15 @@ class QNetwork(nn.Module): # multi-input q network
         )
 
     def forward(self, x_vector, x_image):
-        x_image = self.image_network(x_image.permute(0, 3, 1, 2) / 255.0)
-        x_vector = self.vector_network(x_vector)
-        x = torch.cat([x_vector, x_image], dim=1)
-        x = self.head(x)
-        return x
+        with torch.autocast(device_type='cuda'):
+            x_image = self.image_network((x_image.permute(0, 3, 1, 2) / 255.0))
+            x_vector = self.vector_network(x_vector)
 
-    
+            x = torch.cat([x_vector, x_image], dim=1)
+            x = self.head(x)
+            return x
+
+
 
 def linear_schedule(start_e: float, end_e: float, duration: int, t: int):
     slope = (end_e - start_e) / duration
