@@ -17,6 +17,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from gym.spaces import Box
 from pixel_observation import PixelObservationWrapper
+import torch_tensorrt
 
 def parse_args():
     # fmt: off
@@ -43,7 +44,8 @@ def parse_args():
         help="whether to upload the saved model to huggingface")
     parser.add_argument("--hf-entity", type=str, default="",
         help="the user or org name of the model repository from the Hugging Face Hub")
-
+    parser.add_argument("--load-model", type=str, default=None,
+        help="loads qnetwork")
     # Algorithm specific arguments
     parser.add_argument("--env-id", type=str, default="LunarLander-v2",# "CartPole-v1",
         help="the id of the environment")
@@ -166,10 +168,17 @@ if __name__ == "__main__":
     # env setup
     envs = gym.vector.SyncVectorEnv([make_env(args.env_id, args.seed, 0, args.capture_video, run_name)])
     assert isinstance(envs.single_action_space, gym.spaces.Discrete), "only discrete action space is supported"
-    q_network = QNetwork(envs).to(device)
-    optimizer = optim.Adam(q_network.parameters(), lr=args.learning_rate)
     target_network = QNetwork(envs).to(device)
-    target_network.load_state_dict(q_network.state_dict())
+    q_network = None
+    if args.load_model :
+        q_network = torch.jit.load(args.load_model).to(device)
+        target_network.load_state_dict(torch.load('model_state_dict'))
+    else: 
+        q_network = QNetwork(envs).to(device)
+        target_network.load_state_dict(q_network.state_dict())
+
+    optimizer = optim.Adam(target_network.parameters(), lr=args.learning_rate)
+
 
     rb = DictReplayBuffer(
         args.buffer_size,

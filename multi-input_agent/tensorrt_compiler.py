@@ -66,3 +66,5 @@ if __name__ == "__main__":
     benchmark(trt_model, input_shape=((1, 8),(1, 400,600,3)) ,nruns=100, dtype="fp16")
     print("\n==========================================================\n")
 
+    torch.save(model.state_dict(), "model_state_dict")
+    torch.jit.save(trt_model, "trt_QNetwork")
