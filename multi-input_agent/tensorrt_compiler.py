@@ -11,7 +11,7 @@ mdqn = __import__("multi-imput_dqn")
 
 def benchmark(model, input_shape=((1, 8),(1, 400,600,3)), dtype='fp32', nwarmup=50, nruns=1000):
     input_data0 = torch.randn(input_shape[0], device='cuda')
-    input_data1 = torch.randn(input_shape[1], device='cuda')
+    input_data1 = torch.randn(input_shape[1], device='cuda')   
 
     print("Warm up ...")
     with torch.no_grad():
@@ -44,12 +44,12 @@ if __name__ == "__main__":
     
     model = mdqn.QNetwork(envs).to("cuda")
     print("\n======================Pre Optimization====================\n")
-    benchmark(model, input_shape=((1, 8),(1, 400,600,3)) ,nruns=100, dtype="fp16")
+    benchmark(model, input_shape=((1, 8),(1, 400,600,3)) ,nruns=100, dtype="fp32")
     print("\n==========================================================\n\n")
 
     print("\n======================Pytorch Optimization====================\n")
     torch_optim_model= torch.compile(model, mode="max-autotune")
-    benchmark(torch_optim_model, input_shape=((1, 8),(1, 400,600,3)) ,nruns=100, dtype="fp16")
+    benchmark(torch_optim_model, input_shape=((1, 8),(1, 400,600,3)) ,nruns=100, dtype="fp32")
     print("\n==========================================================\n\n")
 
     print("Starting model compilation (this may take some time grab a coffee)...")
@@ -57,6 +57,7 @@ if __name__ == "__main__":
     model.eval()
     trt_model = torch_tensorrt.compile(model,
     inputs= [torch_tensorrt.Input((1, 8)), torch_tensorrt.Input((1, 400,600,3))],
+    enabled_precisions= { torch.half}
     # enabled_precisions= {torch.half} # Run with FP16 throwing so many issues
 )
     print("Model Compiled!")
