@@ -1,2 +1,3 @@
-__pycache__
+multi-input_agent/__pycache__/
+multi-input_agent/runs/
 *.swp
