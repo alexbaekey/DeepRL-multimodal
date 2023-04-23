@@ -1,3 +1,5 @@
 multi-input_agent/__pycache__/
 multi-input_agent/runs/
 *.swp
+multi-input_agent/trt_QNetwork
+multi-input_agent/model_state_dict
