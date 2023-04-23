@@ -176,6 +176,13 @@ if __name__ == "__main__":
 
     # ENTER TENSORRT OPT HERE - should end with q_network = TRT compiled QNetwork model
 
+    # doesn't work
+    q_network_unopt = QNetwork(envs).to(device)
+    target_network.load_state_dict(q_network_unopt.state_dict())
+    q_network = torch_tensorrt.compile(q_network_unopt, \
+    inputs= [torch_tensorrt.Input((1, 8)), torch_tensorrt.Input((1, 400,600,3))], \
+    enabled_precisions= {torch.half})
+    
     #if args.load_model :
     #    q_network = torch.jit.load(args.load_model).to(device)
     #    target_network.load_state_dict(torch.load('model_state_dict'))
