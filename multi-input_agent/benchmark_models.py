@@ -6,7 +6,7 @@ from os import environ
 import numpy as np
 import torch.backends.cudnn as cudnn
 
-mdqn = __import__("multi-imput_dqn")
+mdqn = __import__("multi-input_dqn")
 
 
 def benchmark(model, input_shape=((1, 8),(1, 400,600,3)), dtype='fp32', nwarmup=50, nruns=1000):
