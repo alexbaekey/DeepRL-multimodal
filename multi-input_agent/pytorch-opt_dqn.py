@@ -20,6 +20,7 @@ from gym.spaces import Box
 from pixel_observation import PixelObservationWrapper
 import torch_tensorrt
 
+
 def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
@@ -123,13 +124,14 @@ class QNetwork(nn.Module): # multi-input q network
         )
 
     def forward(self, x_vector, x_image):
-        x_image = self.image_network((x_image.permute(0, 3, 1, 2) / 255.0))
-        x_vector = self.vector_network(x_vector)
+        with torch.autocast(device_type='cuda', dtype=torch.float16):
+            x_image = self.image_network((x_image.permute(0, 3, 1, 2) / 255.0))
+            x_vector = self.vector_network(x_vector)
 
-        x = torch.cat([x_vector, x_image], dim=1)
-        x = self.head(x)
+            x = torch.cat([x_vector, x_image], dim=1)
+            x = self.head(x)
+
         return x
-
 
 
 def linear_schedule(start_e: float, end_e: float, duration: int, t: int):
@@ -172,11 +174,6 @@ if __name__ == "__main__":
     target_network = QNetwork(envs).to(device)
     q_network = None
     
-    q_network = torch.compile(QNetwork(envs).to(device), mode="reduce-overhead")
-
-
-
-
 
     if args.load_model :
         q_network = torch.jit.load(args.load_model).to(device)
@@ -244,7 +241,8 @@ if __name__ == "__main__":
                     target_max, _ = target_network(data.next_observations['state'],data.next_observations['pixels']).max(dim=1)
                     td_target = data.rewards.flatten() + args.gamma * target_max * (1 - data.dones.flatten())
                 old_val = q_network(data.observations['state'], data.next_observations['pixels']).gather(1, data.actions).squeeze()
-                loss = F.mse_loss(td_target, old_val)
+                with torch.autocast(device_type='cuda', dtype=torch.float16):
+                    loss = F.mse_loss(td_target, old_val)
 
                 if global_step % 100 == 0:
                     writer.add_scalar("losses/td_loss", loss, global_step)
